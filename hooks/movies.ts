@@ -68,6 +68,26 @@ export const useMoviesStore = create(
 export function useMovies() {
   const searchText = useMoviesStore(state => state.searchText)
   const setMessage = useMoviesStore(state => state.setMessage)
-  // TODO: 데이터 패칭 및 캐싱 관리
-  return useQuery()
+
+  return useQuery({
+    queryKey: ['movies', searchText],
+    queryFn: async () => {
+      if (!searchText) {
+        return []
+      }
+      const { data } = await axios.get<{ Search?: Movies; Error?: string }>(
+        `/api/movies?title=${searchText}`
+      )
+      if (data.Error) {
+        setMessage(data.Error)
+        return []
+      }
+      setMessage('')
+      return data.Search || []
+    },
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60,
+    enabled: true,
+    retry: 1
+  })
 }
